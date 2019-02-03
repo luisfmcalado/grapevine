@@ -1,0 +1,27 @@
+defmodule Grapevine.Support.Bench do
+  def get_pid(node), do: :rpc.block_call(node, Process, :whereis, [:gsp1])
+
+  def in_sync?(n, size) do
+    %{updates: slave0_updates} = :slave_0@localhost |> get_pid() |> :sys.get_state()
+
+    result =
+      Enum.all?(1..(n - 1), fn i ->
+        %{updates: updates} = :"slave_#{i}@localhost" |> get_pid() |> :sys.get_state()
+
+        sync_count = Enum.count(updates, fn {_k, %{state: state}} -> state == :removed end)
+
+        Map.keys(updates) == Map.keys(slave0_updates) &&
+          Enum.count(updates, fn {_k, %{state: state}} -> state != :removed end) == 0 &&
+          sync_count == size + n
+      end)
+
+    result
+  end
+
+  def assert(result, message) do
+    case result do
+      true -> :ok
+      _ -> throw("assert failed: #{message}")
+    end
+  end
+end
