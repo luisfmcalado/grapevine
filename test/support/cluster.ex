@@ -6,13 +6,13 @@ defmodule Grapevine.Support.Cluster do
     :erl_boot_server.start([])
   end
 
-  def init_slaves(n, handler \\ DummyHandler, opts \\ []) do
+  def init_slaves(n, gossip, handler \\ DummyHandler, opts \\ []) do
     Enum.each(0..(n - 1), fn index ->
-      start_slave(index, handler, opts)
+      start_slave(index, gossip, handler, opts)
     end)
   end
 
-  def start_slave(index, handler \\ DummyHandler, opts \\ []) do
+  def start_slave(index, gossip, handler \\ DummyHandler, opts \\ []) do
     {:ok, node} = :slave.start_link(:localhost, 'slave_#{index}')
     rpc(node, :code, :add_paths, [:code.get_path()])
 
@@ -22,13 +22,15 @@ defmodule Grapevine.Support.Cluster do
       end
     end
 
+    name = Keyword.get(opts, :name, :gsp1)
+
     opts =
       Keyword.merge(
         [
-          name: :gsp1,
+          name: name,
           membership_module: Grapevine.Node,
           membership_opts: [
-            mfa: {Grapevine, :add, [:gsp1]}
+            mfa: {Grapevine, :add, [name]}
           ]
         ],
         opts
@@ -36,7 +38,7 @@ defmodule Grapevine.Support.Cluster do
 
     rpc(node, Application, :ensure_all_started, [:mix])
     rpc(node, Mix, :env, [Mix.env()])
-    {:ok, _} = rpc(node, Grapevine, :start_link, [handler, opts])
+    {:ok, _} = rpc(node, Grapevine, :start_link, [gossip, handler, opts])
 
     for {app_name, _, _} <- Application.loaded_applications() do
       rpc(node, Application, :ensure_all_started, [app_name])
@@ -49,6 +51,10 @@ defmodule Grapevine.Support.Cluster do
     Enum.all?(0..(n - 1), fn index ->
       slave_name(index) in nodes_list
     end)
+  end
+
+  def stop_master() do
+    Node.stop()
   end
 
   def stop_slaves(n) do

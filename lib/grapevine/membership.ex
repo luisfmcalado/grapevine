@@ -14,10 +14,10 @@ defmodule Grapevine.Membership do
   @doc """
   List of nodes connected to the current node.
   """
-  @callback list() :: [atom(), ...]
+  @callback list() :: [node(), ...]
 
   @doc """
   Returns the name of the current node.
   """
-  @callback self() :: atom()
+  @callback self() :: node()
 end

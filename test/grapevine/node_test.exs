@@ -5,12 +5,13 @@ defmodule Grapevine.NodeTest do
   import Grapevine.Support.Cluster
 
   alias Grapevine.Node
+  alias Grapevine.Gossip.Rumor
 
   setup do
     Process.flag(:trap_exit, true)
 
     setup_distributed()
-    init_slaves(3)
+    init_slaves(3, Rumor)
 
     {:ok, pid} = Node.start_link(mfa: {Grapevine.NodeTest, :add, [self()]})
 
@@ -30,7 +31,7 @@ defmodule Grapevine.NodeTest do
   end
 
   test "it detects when a node goes up", %{pid: _pid} do
-    start_slave(3)
+    start_slave(3, Rumor)
     assert_receive {self, %{action: :nodeup, node: :slave_3@localhost}}, 1000
   end
 
@@ -42,7 +43,7 @@ defmodule Grapevine.NodeTest do
     assert :master@localhost == Node.self()
   end
 
-  def add(name, value) do
+  def add(name, _id, value) do
     send(name, {name, value})
   end
 end

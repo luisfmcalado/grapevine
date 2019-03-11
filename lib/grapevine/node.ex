@@ -1,6 +1,9 @@
 defmodule Grapevine.Node do
   @moduledoc false
+
   use Grapevine.Membership
+
+  alias Grapevine.Gossip.Message
 
   def start_link(opts) do
     GenServer.start_link(__MODULE__, opts)
@@ -27,7 +30,8 @@ defmodule Grapevine.Node do
   end
 
   defp do_node_action(action, node, %{mfa: {m, f, a}}) do
-    apply(m, f, a ++ [%{node: node, action: action}])
+    message = %{node: node, action: action}
+    apply(m, f, a ++ [Message.hash!(message), message])
   end
 
   defdelegate list(), to: Node

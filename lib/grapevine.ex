@@ -6,9 +6,10 @@ defmodule Grapevine do
   @doc """
   Starts grapevine.
   """
-  @spec start_link(atom(), keyword()) :: term()
-  def start_link(handler, opts) do
+  @spec start_link(module(), module(), keyword()) :: term()
+  def start_link(gossip, handler, opts) do
     opts
+    |> Keyword.put(:gossip, gossip)
     |> Keyword.put(:handler, handler)
     |> Grapevine.Supervisor.start_link()
   end
@@ -17,8 +18,8 @@ defmodule Grapevine do
   Adds a new update to the gossip instance. The update will be propagated
   to all processes within the cluster that have the same name.
   """
-  @spec add(atom(), any(), timeout()) :: term()
-  def add(name, value, timeout \\ 5000) do
-    GenServer.call(name, {:add, value}, timeout)
+  @spec add(atom(), any(), binary(), timeout()) :: term()
+  def add(name, value, id, timeout \\ 5000) do
+    Grapevine.Gossip.add(name, value, id, timeout)
   end
 end

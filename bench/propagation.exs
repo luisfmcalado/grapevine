@@ -3,12 +3,11 @@ import Grapevine.Support.Cluster
 import Grapevine.Support.Bench
 
 alias Grapevine.Support.Generator
-
-setup_distributed()
+alias Grapevine.Support.DummyHandler
+alias Grapevine.Gossip.Entropy
+alias Grapevine.Gossip.Rumor
 
 nodes = 2
-stop_slaves(nodes)
-wait(fn -> Node.list() != [] end, 500, 20) |> assert("no nodes connected?")
 
 opts = [
   delta: 10,
@@ -16,14 +15,24 @@ opts = [
   level: 1
 ]
 
-init_slaves(nodes, Support.BenchHandler, opts)
-wait(fn -> !slaves_connected?(nodes) end, 500, 20) |> assert("slaves connected?")
-Generator.start_link()
-
-Benchee.run(%{
-  "add" => fn ->
-    value = Generator.next()
-    Grapevine.add({:gsp1, :slave_0@localhost}, value)
-    wait(fn -> !in_sync?(nodes, value + 3) end, 10, 200) |> assert("in sync?")
+Benchee.run(
+  %{
+    "propagation" => fn _ ->
+      value = Generator.next()
+      Grapevine.add({:gsp1, :slave_0@localhost}, value, value)
+      wait(fn -> !in_sync?(nodes, value + 1) end, 10, 200) |> assert("in sync?")
+    end
+  },
+  inputs: %{
+    "Entropy" => Entropy,
+    "Rumor" => Rumor
+  },
+  before_scenario: fn gossip ->
+    setup_distributed()
+    stop_slaves(nodes)
+    init_slaves(nodes, gossip, DummyHandler, opts)
+    wait(fn -> !slaves_connected?(nodes) end, 500, 20) |> assert("slaves connected?")
+    Generator.start_link()
+    Generator.reset()
   end
-})
+)

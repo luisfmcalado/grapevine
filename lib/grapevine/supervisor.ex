@@ -8,11 +8,12 @@ defmodule Grapevine.Supervisor do
 
   def init(opts) do
     handler = Keyword.fetch!(opts, :handler)
+    gossip = Keyword.fetch!(opts, :gossip)
     membership_module = Keyword.fetch!(opts, :membership_module)
     membership_opts = Keyword.fetch!(opts, :membership_opts)
 
     children = [
-      {Grapevine.Gossip, [handler, opts]},
+      {gossip, [handler, opts]},
       {membership_module, membership_opts}
     ]
 

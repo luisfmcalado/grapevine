@@ -17,7 +17,10 @@ defmodule Example do
     [
       %{
         id: Grapevine,
-        start: {Grapevine, :start_link, [Grapevine.DummyHandler, opts]}
+        start: {Grapevine, :start_link, [
+                   Grapevine.Gossip.Rumor,
+                   Grapevine.DummyHandler,
+                   opts]}
       }
     ] ++ children()
     |> Supervisor.start_link(strategy: :one_for_one)
