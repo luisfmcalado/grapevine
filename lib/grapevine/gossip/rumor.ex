@@ -46,6 +46,7 @@ defmodule Grapevine.Gossip.Rumor do
     Enum.filter(updates, fn {k, _v} ->
       Map.get(meta, k) |> State.infected?()
     end)
+    |> Map.new()
   end
 
   def push(
